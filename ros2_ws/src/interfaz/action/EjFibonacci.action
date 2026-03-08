@@ -1,0 +1,5 @@
+int32 orden # Objetivo
+---
+int32[] secuencia_final # Resultado
+---
+float64 secuencia_actual # Feedback

@@ -1,0 +1,8 @@
+# Goal
+int32 target_percentage
+---
+# Result
+string warning
+---
+# Feedback
+int32 current_percentage
