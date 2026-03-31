@@ -12,7 +12,7 @@ Layout del parking (coordenadas mundo):
 
 El robot arranca en (0, 0) mirando hacia +X.
 Estrategia: avanzar hasta alinearse con el centro del hueco,
-girar -90° (mirar hacia -Y) y entrar recto.
+girar 90° (mirar hacia +Y, de espaldas al hueco) y entrar marcha atrás.
 
 Uso:
     ros2 run p3_pkg aparcamiento
@@ -71,7 +71,7 @@ class AparcamientoNode(Node):
         )
         self.angular_vel = msg.twist.twist.angular.z
 
-        if self.action == 'forward':
+        if self.action == 'forward' or self.action == 'reverse':
             self._forward_ctrl()
         elif self.action == 'rotate':
             self._rotate_ctrl()
@@ -86,6 +86,8 @@ class AparcamientoNode(Node):
             self._next()
         else:
             speed = min(SPEED, max(0.05, remaining * 1.5))
+            if self.action == 'reverse':
+                speed = -speed
             msg = Twist()
             msg.linear.x = speed
             self.pub.publish(msg)
@@ -123,7 +125,7 @@ class AparcamientoNode(Node):
 
         self.action, value = self.steps.popleft()
 
-        if self.action == 'forward':
+        if self.action in ('forward', 'reverse'):
             self.origin_x = self.x
             self.origin_y = self.y
             self.target = value
@@ -134,13 +136,13 @@ class AparcamientoNode(Node):
     # ── Main sequence ────────────────────────────────────────────────────
 
     def run(self):
-        # Maniobra de aparcamiento:
+        # Maniobra de aparcamiento en marcha atrás:
         # 1. Avanzar 1.5m (alinearse con el centro del hueco en X)
-        # 2. Girar -90° (mirar hacia -Y)
-        # 3. Avanzar 0.7m (entrar en el hueco)
+        # 2. Girar 90° (mirar hacia +Y, de espaldas al hueco)
+        # 3. Marcha atrás 1.4m (entrar de culo en el hueco)
         self.steps.append(('forward', 1.5))
-        self.steps.append(('rotate', -90))
-        self.steps.append(('forward', 0.7))
+        self.steps.append(('rotate', 90))
+        self.steps.append(('reverse', 1.4))
 
         self.get_logger().info('Esperando odometría...')
         while self.x is None:

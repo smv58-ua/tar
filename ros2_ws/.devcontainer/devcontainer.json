@@ -1,0 +1,40 @@
+{
+  "name": "ROS 2 Humble",
+  "build": {
+    "dockerfile": "../../Dockerfile",
+    "args": {
+      "USERNAME": "dnsy",
+      "USER_UID": "1000",
+      "USER_GID": "1000"
+    }
+  },
+  "workspaceFolder": "/workspace",
+  "workspaceMount": "source=${localWorkspaceFolder},target=/workspace,type=bind",
+  "remoteUser": "dnsy",
+  "runArgs": [
+    "--network=host",
+    "--device=nvidia.com/gpu=all"
+  ],
+  "mounts": [
+    "source=/tmp/.X11-unix,target=/tmp/.X11-unix,type=bind"
+  ],
+  "containerEnv": {
+    "DISPLAY": "${localEnv:DISPLAY}",
+    "TERM": "xterm-256color"
+  },
+  "postCreateCommand": "bash /workspace/.devcontainer/postCreateCommand.sh",
+  "customizations": {
+    "vscode": {
+      "extensions": [
+        "ms-iot.vscode-ros",
+        "ms-python.python",
+        "ms-vscode.cmake-tools",
+        "smilerobotics.urdf"
+      ],
+      "settings": {
+        "ros.distro": "humble",
+        "python.defaultInterpreterPath": "/usr/bin/python3"
+      }
+    }
+  }
+}
