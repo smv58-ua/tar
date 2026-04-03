@@ -162,7 +162,7 @@ export TURTLEBOT3_MODEL=waffle
 ros2 run turtlebot3_teleop teleop_keyboard
 ```
 
-#image("/assets/image-1.png")
+#image("assets/image-1.png")
 
 #pregunta("1", [¿Cuál es el topic en el cual se debe publicar la información para que el robot se mueva?])[
   El topic sobre el que se publica para mover al robot es `/cmd_vel`. Se puede comprobar inspeccionando el nodo de teleoperación:
@@ -259,7 +259,7 @@ ros2 run turtlebot3_teleop teleop_keyboard
     ]
 
     #align(center)[
-      #image("/assets/image-10.png")
+      #image("assets/image-10.png")
     ]
   ]
 
@@ -272,7 +272,7 @@ ros2 run turtlebot3_teleop teleop_keyboard
     ```
     El robot avanza 3 metros y gira $-120°$ (horario) tres veces. El ángulo exterior de un triángulo equilátero es $(360°) / 3 = 120°$, con signo negativo para girar a la derecha.
 
-    #image("/assets/image-11.png")
+    #image("assets/image-11.png")
   ]
 
   #campo("Modo 2: Cuadrado de 1m de lado")[
@@ -284,7 +284,7 @@ ros2 run turtlebot3_teleop teleop_keyboard
     ```
     El robot avanza 1 metro y gira $-90°$ cuatro veces, dibujando un cuadrado.
 
-    #image("/assets/image-12.png")
+    #image("assets/image-12.png")
   ]
 
   #campo("Modo 3: Figura de infinito (bowtie)")[
@@ -301,7 +301,7 @@ ros2 run turtlebot3_teleop teleop_keyboard
     ```
     La figura de infinito se construye como dos triángulos simétricos (un _bowtie_). El robot avanza 0.5m, gira para trazar el primer triángulo, vuelve al centro y traza el segundo triángulo en espejo.
 
-    #image("/assets/image-13.png")
+    #image("assets/image-13.png")
   ]
 
   #campo("Ejecución")[
@@ -336,9 +336,9 @@ ros2 run turtlebot3_teleop teleop_keyboard
       columns: (1fr, 1fr, 1fr),
       align: center + horizon,
       gutter: 8pt,
-      image("/assets/image-6.png"),
-      image("/assets/image-7.png"),
-      image("/assets/image-8.png"),
+      image("assets/image-6.png"),
+      image("assets/image-7.png"),
+      image("assets/image-8.png"),
     )
   ]
 
@@ -432,7 +432,7 @@ ros2 run turtlebot3_teleop teleop_keyboard
     ros2 run p3_pkg aparcamiento
     ```
 
-    #image("/assets/image-9.png")
+    #image("assets/image-9.png")
   ]
 ]
 
@@ -494,7 +494,7 @@ ros2 run turtlebot3_teleop teleop_keyboard
     - Los avances mantienen el _heading_ con correcciones en tiempo real
     - Las velocidades se modulan proporcionalmente a la distancia restante, evitando sobrepasos
 
-    #image("/assets/image-14.png")
+    #image("assets/image-14.png")
   ]
 ]
 
