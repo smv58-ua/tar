@@ -9,6 +9,9 @@ __pycache__/
 *.pyo
 *.pyd
 
+# ROS2 Python stubs for IDE intellisense
+.ros2_stubs/
+
 # Archivos de usuario/sistema
 .DS_Store
 .vscode/

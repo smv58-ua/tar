@@ -1,0 +1,13 @@
+Waffle vs. Burger:
+
+waffle es más grande, burger es más pequeño. Eso significa que los parámetros, umbrales, etc... 
+pueda que se tengan que cambiar para detectar con mayor precisión que tan lejos están. Sin embargo, en ambos funcionaron los algoritmos sin diferencias notables.
+
+Sobre pregunta #15: No lo resuelve por el algoritmo utilizado:
+
+Right Hand algorithm solo funciona con mapas donde todas las paredes se conectan con la pared externa
+
+Para eso usaremos pledge:
+
+Casi igual, pero tiene una cláusula de escape. Busca una pared con cual chocar, luego la sigue, y hasta que regresa a esa misma orientación "escapa" hasta encontrar otra pared con cual chocarse.
+

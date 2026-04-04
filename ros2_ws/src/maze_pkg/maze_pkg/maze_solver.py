@@ -1,5 +1,6 @@
 import math
 import rclpy
+import rclpy.qos
 from rclpy.node import Node
 from geometry_msgs.msg import Twist
 from sensor_msgs.msg import LaserScan

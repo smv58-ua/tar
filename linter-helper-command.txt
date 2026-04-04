@@ -1,0 +1,1 @@
+docker run --rm -v "$(pwd)/.ros2_stubs:/out" ros_humble:latest bash -c "cp -r /opt/ros/humble/local/lib/python3.10/dist-packages/* /out/"
