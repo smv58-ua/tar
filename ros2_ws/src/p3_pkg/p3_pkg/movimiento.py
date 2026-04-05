@@ -103,7 +103,7 @@ class MovementNode(Node):
 
     def _pid(self, error, kp, ki, kd):
         """Calcula la salida PID dado un error."""
-        now = time.monotonic()
+        now = self.get_clock().now().nanoseconds / 1e9
         if self._prev_time is None:
             dt = 0.0
         else:

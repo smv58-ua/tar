@@ -162,7 +162,7 @@ export TURTLEBOT3_MODEL=waffle
 ros2 run turtlebot3_teleop teleop_keyboard
 ```
 
-#image("assets/image-1.png")
+#image("/assets/image-1.png")
 
 #pregunta("1", [¿Cuál es el topic en el cual se debe publicar la información para que el robot se mueva?])[
   El topic sobre el que se publica para mover al robot es `/cmd_vel`. Se puede comprobar inspeccionando el nodo de teleoperación:
@@ -259,7 +259,7 @@ ros2 run turtlebot3_teleop teleop_keyboard
     ]
 
     #align(center)[
-      #image("assets/image-10.png")
+      #image("/assets/image-10.png")
     ]
   ]
 
@@ -272,7 +272,7 @@ ros2 run turtlebot3_teleop teleop_keyboard
     ```
     El robot avanza 3 metros y gira $-120°$ (horario) tres veces. El ángulo exterior de un triángulo equilátero es $(360°) / 3 = 120°$, con signo negativo para girar a la derecha.
 
-    #image("assets/image-11.png")
+    #image("/assets/image-11.png")
   ]
 
   #campo("Modo 2: Cuadrado de 1m de lado")[
@@ -284,7 +284,7 @@ ros2 run turtlebot3_teleop teleop_keyboard
     ```
     El robot avanza 1 metro y gira $-90°$ cuatro veces, dibujando un cuadrado.
 
-    #image("assets/image-12.png")
+    #image("/assets/image-12.png")
   ]
 
   #campo("Modo 3: Figura de infinito (bowtie)")[
@@ -301,7 +301,7 @@ ros2 run turtlebot3_teleop teleop_keyboard
     ```
     La figura de infinito se construye como dos triángulos simétricos (un _bowtie_). El robot avanza 0.5m, gira para trazar el primer triángulo, vuelve al centro y traza el segundo triángulo en espejo.
 
-    #image("assets/image-13.png")
+    #image("/assets/image-13.png")
   ]
 
   #campo("Ejecución")[
@@ -336,9 +336,9 @@ ros2 run turtlebot3_teleop teleop_keyboard
       columns: (1fr, 1fr, 1fr),
       align: center + horizon,
       gutter: 8pt,
-      image("assets/image-6.png"),
-      image("assets/image-7.png"),
-      image("assets/image-8.png"),
+      image("/assets/image-6.png"),
+      image("/assets/image-7.png"),
+      image("/assets/image-8.png"),
     )
   ]
 
@@ -432,7 +432,7 @@ ros2 run turtlebot3_teleop teleop_keyboard
     ros2 run p3_pkg aparcamiento
     ```
 
-    #image("assets/image-9.png")
+    #image("/assets/image-9.png")
   ]
 ]
 
@@ -469,7 +469,7 @@ ros2 run turtlebot3_teleop teleop_keyboard
   #campo("Implementación del PID")[
     ```python
     def _pid(self, error, kp, ki, kd):
-        now = time.monotonic()
+        now = self.get_clock().now().nanoseconds / 1e9
         dt = now - self._prev_time if self._prev_time else 0.0
         self._prev_time = now
 
@@ -494,7 +494,7 @@ ros2 run turtlebot3_teleop teleop_keyboard
     - Los avances mantienen el _heading_ con correcciones en tiempo real
     - Las velocidades se modulan proporcionalmente a la distancia restante, evitando sobrepasos
 
-    #image("assets/image-14.png")
+    #image("/assets/image-15.png")
   ]
 ]
 
@@ -506,22 +506,32 @@ ros2 run turtlebot3_teleop teleop_keyboard
   export TURTLEBOT3_MODEL=burger
   ```
 
-  #captura
+  #image("/assets/image-16.png")
 
   #pregunta("", [¿Observas diferencias en la precisión de los movimientos entre Burger y Waffle? ¿Cuál robot acumula más error? ¿En qué tipo de movimiento se nota más la diferencia?])[
-    
+    Sí, hay diferencias aunque no son enormes. Al ejecutar 10 repeticiones del cuadrado con PID activado se obtiene:
+
+    #table(
+      columns: (1fr, 1fr, 1fr),
+      table.header([*Métrica*], [*Waffle*], [*Burger*]),
+      [Posición final], [($-0.02$, $-0.01$)], [($-0.02$, $-0.02$)],
+      [Heading final], [$2.23°$], [$2.73°$],
+      [Drift angular/iter], [$\~0.22°$], [$\~0.27°$],
+    )
+
+    Burger acumula algo más de error, sobre todo angular (un $\~23%$ más de drift por iteración). Donde más se nota es en los *giros*: como tiene las ruedas más juntas ($0.160$ m vs $0.288$ m), cualquier pequeña diferencia de velocidad entre ruedas se traduce en un desvío angular mayor.
   ]
 
   #pregunta("", [¿Burger realiza giros más amplios o más cerrados que Waffle?])[
-    
+    Burger hace giros *más cerrados*. Al tener las ruedas más juntas ($0.160$ m vs $0.288$ m en Waffle), el radio de giro es más pequeño.
   ]
 
   #pregunta("", [Al implementar controladores para corregir errores de trayectoria: ¿Los mismos parámetros PID funcionan igual para ambos robots?])[
-    
+    Sí, los mismos parámetros PID (`KP_ROT=0.5`, `KI_ROT=0.01`, `KD_ROT=0.05`) funcionan bien para los dos robots. Ninguno se vuelve inestable ni oscila, y ambos completan las 10 repeticiones del cuadrado sin problemas. Eso sí, Burger acumula algo más de drift angular ($\~0.27°$/iter vs $\~0.22°$/iter en Waffle), así que el PID no llega a compensar del todo el error extra que introduce su menor separación de ruedas. Para que Burger igualase a Waffle habría que subir un poco las ganancias, sobre todo la proporcional, para que corrija más agresivamente esas pequeñas desviaciones.
   ]
 
   #pregunta("", [Durante la tarea de aparcamiento: ¿Cuál robot realiza la maniobra con menos correcciones?])[
-    
+    Waffle aparca con menos correcciones. Al ser más pesado y tener la base más ancha ($0.266 times 0.266$ m), sus trayectorias son más estables y no se desvía tanto. Burger es bastante más compacto ($0.140 times 0.140$ m), así que le sobra espacio dentro del hueco, pero necesita más ajustes correciones.
   ]
 
   #pregunta("", [Inspecciona las propiedades URDF de ambos robots: ¿Cómo afectan las diferencias a la precisión y estabilidad?])[
@@ -530,14 +540,18 @@ ros2 run turtlebot3_teleop teleop_keyboard
     #table(
       columns: (1fr, 1fr, 1fr),
       table.header([*Propiedad*], [*Burger*], [*Waffle*]),
-      [Radio de rueda], [$\~0.033$ m], [$\~0.033$ m],
-      [Separación de ruedas], [$\~0.160$ m], [$\~0.287$ m],
-      [Masa total], [$\~1.0$ kg], [$\~1.8$ kg],
+      [Radio de rueda], [$0.033$ m], [$0.033$ m],
+      [Separación de ruedas], [$0.160$ m], [$0.288$ m],
+      [Masa base], [$0.826$ kg], [$1.373$ kg],
+      [Caja de colisión], [$0.140 times 0.140$ m], [$0.266 times 0.266$ m],
+      [Ruedas caster], [1 trasera], [2 traseras],
       [Sensor LiDAR], [LDS-01 (360°)], [LDS-01 (360°)],
-      [Cámara], [No], [Sí (Intel RealSense)],
+      [Cámara], [No], [Intel RealSense R200],
     )
 
-    TODO: Comentar diferencias
+    Lo que más afecta es la *separación de ruedas*: Waffle tiene la base casi el doble de ancha ($0.288$ vs $0.160$ m), lo que le da más estabilidad en línea recta. En un robot diferencial, el error angular de la odometría depende de $Delta v \/ L$ (siendo $L$ la separación entre ruedas), así que con la misma imprecisión en las ruedas, Burger acumula más error angular.
+
+    La *masa* también se nota: Waffle pesa más ($1.373$ kg base vs $0.826$ kg), tiene más inercia y eso hace que sus movimientos sean más suaves y predecibles. Burger es más ágil, pero también más sensible a cualquier perturbación.
   ]
 ]
 
