@@ -26,7 +26,7 @@ setup(
     tests_require=['pytest'],
     entry_points={
         'console_scripts': [
-            'maze_solver_node = maze_pkg.maze_solver:main',
+            'maze_solver_node = maze_pkg.res_maze:main',
             'maze_solver_pledge_node = maze_pkg.maze_solver_pledge:main'
         ],
     },
