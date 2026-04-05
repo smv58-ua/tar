@@ -181,25 +181,25 @@ class MazeSolverNode(Node):
                 
                 # 1. Tener pared a la derecha y sin pared al frente
                 if self.pared_derecha and not self.pared_frente:
-                    # self.get_logger().info('ESTADO 1: Avanzando recto')
+                    self.get_logger().info('ESTADO 1: Avanzando recto')
                     cmd.linear.x = VEL_LINEAL
                     cmd.angular.z = 0.0
 
                 # 2. Tener pared derecha y pared al frente
                 elif self.pared_derecha and self.pared_frente:
-                    # self.get_logger().info('ESTADO 2: Girando izquierda')
+                    self.get_logger().info('ESTADO 2: Girando izquierda')
                     cmd.linear.x = 0.0
                     cmd.angular.z = VEL_ANGULAR
 
                 # 3. Tener pared al frente y no tener pared derecha
                 elif self.pared_frente and not self.pared_derecha:
-                    # self.get_logger().info('ESTADO 3 (Antiguo 4): Girando derecha')
+                    self.get_logger().info('ESTADO 3: Girando derecha')
                     cmd.linear.x = 0.0
                     cmd.angular.z = -VEL_ANGULAR
                     
                 # 4. No tener pared al frente ni a la derecha
                 else:
-                    self.get_logger().info('ESTADO 4: Avanzando recto (Estado por defecto)')
+                    self.get_logger().info('ESTADO 4: Girando derecha y avanzando')
                     cmd.linear.x = VEL_LINEAL / 4.0
                     cmd.angular.z = -VEL_ANGULAR
 

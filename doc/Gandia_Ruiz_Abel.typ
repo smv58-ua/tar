@@ -540,3 +540,64 @@ ros2 run turtlebot3_teleop teleop_keyboard
     TODO: Comentar diferencias
   ]
 ]
+
+#pagebreak()
+
+= Parte 2: Resolución de un Laberinto
+
+En esta segunda parte de la práctica, se utilizará el Turtlebot 3 equipado con un sensor LiDAR para resolver un laberinto de manera autónoma.
+
+== Preguntas teóricas
+
+#pregunta("12", [¿Cuál es el topic asociado al LiDAR? ¿Cuál es la tipología de los mensajes?])[
+  TODO
+]
+
+#pregunta("13", [¿Cuál es el rango de distancias que puede medir el LiDAR? ¿Cuál es el rango angular de escaneo que tiene el LiDAR? ¿Cuál es el origen de referencia del LiDAR?])[
+  TODO
+]
+
+== Ejercicios
+
+#ejercicio("1", [Desarrollar un nodo `res_maze.py` que haga que el robot logre escapar del laberinto])[
+  El objetivo es emplear el Turtlebot 3 y desarrollar un nodo que haga que el robot logre "escapar" del laberinto, el nodo debe llamarse `res_maze.py` dentro del paquete `maze_pkg`. Para poder cargar el entorno de simulación con el mapa con el laberinto, se deben añadir los directorios `models`, `worlds` y `launch`, que se encuentran en la carpeta `Parte_2`, en el directorio raíz del paquete. A continuación, para poder lanzar el robot se debe ejecutar el siguiente comando una vez compilado el paquete:
+  ```bash
+  ros2 launch maze_pkg maze_1.launch.py
+  ```
+
+  TODO
+]
+
+#ejercicio("2", [Probar el algoritmo de resolución en `maze_2.world`])[
+  En la carpeta `worlds` existe otro mapa con otro modelo de laberinto llamado `maze_2.world`. Se ejecuta este nuevo entorno en `Gazebo` y se lanza de nuevo el algoritmo de resolución del Ejercicio 1.
+
+  Para lanzar este otro `world` se usa el launch dedicado:
+  ```bash
+  ros2 launch maze_pkg maze_2.launch.py
+  ```
+
+  #pregunta("14", [¿Qué problemática observas en este tipo de escenarios?])[
+    TODO
+  ]
+
+  #pregunta("15", [¿Es el robot capaz de resolver este laberinto? Si no es así, justifica tu respuesta. ¿Qué información crees que necesita el robot para poder llegar a resolverlo?])[
+    TODO
+  ]
+]
+
+#ejercicio("3", [Repetir los ejercicios anteriores empleando el Turtlebot 3 Burger])[
+  Se repiten los Ejercicios 1 y 2 empleando el modelo `Burger` en lugar del `Waffle`:
+  ```bash
+  export TURTLEBOT3_MODEL=burger
+  ```
+
+  #pregunta("16", [¿Qué diferencias observas respecto al otro modelo? Detalla claramente las diferencias que observes.])[
+    TODO
+  ]
+]
+
+#ejercicio("4", [Generar un nuevo laberinto personalizado y probarlo con ambos Turtlebot3])[
+  En este ejercicio se pide generar un nuevo laberinto a tu gusto y probar con los dos Turtlebot3 a resolverlo. Para ello, se debe investigar sobre cómo generar modelos y mapas en `Gazebo` para luego cargarlos. Como guía para el laberinto se puede usar el siguiente generador: #link("https://mazegenerator.net/")[Maze Generator]. Cuanto más complejo sea el laberinto mejor valoración se tendrá y, sobre todo, si los robots logran resolverlo.
+
+  TODO
+]

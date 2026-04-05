@@ -8,8 +8,8 @@ from sensor_msgs.msg import LaserScan
 VEL_ANGULAR = 0.5       # Velocidad angular máxima (rad/s)
 VEL_LINEAL = 0.4        # Velocidad lineal máxima (m/s)
 GRADOS_BUSQUEDA = 20    # Ángulo en grados para buscar obstáculos (frente y derecha)
-UMBRAL_FRENTE = 1.2     # Distancia mínima para considerar que hay una pared al frente (m)
-UMBRAL_DERECHA = 1.2    # Distancia mínima para considerar que hay una pared a la derecha (m)
+UMBRAL_FRENTE = 0.5     # Distancia mínima para considerar que hay una pared al frente (m)
+UMBRAL_DERECHA = 0.5    # Distancia mínima para considerar que hay una pared a la derecha (m)
 
 class MazeSolverNode(Node):
 
@@ -25,6 +25,7 @@ class MazeSolverNode(Node):
         # Variables de estado del entorno inicializadas a False
         self.pared_derecha = False
         self.pared_frente = False
+        self.initial_state = True
 
         self.rangos = []
 
@@ -103,29 +104,37 @@ class MazeSolverNode(Node):
         cmd = Twist()
 
         # --- MÁQUINA DE ESTADOS ---
+        # estado inicial
+        if self.initial_state and not self.pared_derecha and not self.pared_frente:
+            self.get_logger().info('ESTADO 0: INICIAL BUSCANDO PARED')
+            cmd.linear.x = VEL_LINEAL
+            cmd.angular.z = 0.0
 
         # 1. Tener pared a la derecha y sin pared al frente
-        if self.pared_derecha and not self.pared_frente:
+        elif self.pared_derecha and not self.pared_frente:
+            self.initial_state = False
             self.get_logger().info('ESTADO 1: Avanzando recto')
             cmd.linear.x = VEL_LINEAL
             cmd.angular.z = 0.0
 
         # 2. Tener pared derecha y pared al frente
         elif self.pared_derecha and self.pared_frente:
+            self.initial_state = False
             self.get_logger().info('ESTADO 2: Girando izquierda')
             cmd.linear.x = 0.0
             cmd.angular.z = VEL_ANGULAR
 
         # 3. Tener pared al frente y no tener pared derecha
         elif self.pared_frente and not self.pared_derecha:
-            self.get_logger().info('ESTADO 3 (Antiguo 4): Girando derecha')
+            self.initial_state = False
+            self.get_logger().info('ESTADO 3: Girando derecha')
             cmd.linear.x = 0.0
             cmd.angular.z = -VEL_ANGULAR
             
         # 4. No tener pared al frente ni a la derecha
         else:
-            self.get_logger().info('ESTADO 4: Avanzando recto (Estado por defecto)')
-            cmd.linear.x = VEL_LINEAL
+            self.get_logger().info('ESTADO 4: Girando derecha y avanzando')
+            cmd.linear.x = VEL_LINEAL / 4.0
             cmd.angular.z = -VEL_ANGULAR
 
         self.cmd_pub.publish(cmd)
