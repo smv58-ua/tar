@@ -643,8 +643,8 @@ Para comenzar, se lanza en un mundo vacío por un lado el Turtlebot 2 y por otro
   También se han definido unos umbrales de distancia para considerar que hay una pared, quedando establecidos finalmente en:
 
   ```python
-  UMBRAL_FRENTE = 1.2      # Distancia mínima para considerar que hay una pared al frente (m)
-  UMBRAL_DERECHA = 1.2  # Distancia mínima para considerar que hay una pared a la derecha (m)
+  UMBRAL_FRENTE = 0.5      # Distancia mínima para considerar que hay una pared al frente (m)
+  UMBRAL_DERECHA = 0.5     # Distancia mínima para considerar que hay una pared a la derecha (m)
   ```
 
   Como resultado, el robot es capaz de resolver el laberinto siguiendo la pared derecha, se puede comprobar en el siguiente #link("https://youtu.be/azQwjBAmv10")[video de la ejecución] del nodo o lanzando el entorno en Gazebo y ejecutando el nodo:
@@ -673,12 +673,70 @@ Para comenzar, se lanza en un mundo vacío por un lado el Turtlebot 2 y por otro
   ]
 
   #pregunta("14", [¿Qué problemática observas en este tipo de escenarios?])[
-    El problema principal de `maze_2` es que hay paredes internas que no están conectadas con las paredes exteriores del laberinto (las que tienen la salida). Esto hace que un algoritmo de seguimiento de pared (como wall-following o Pledge) pueda quedarse dando vueltas indefinidamente alrededor de una "isla" interior sin llegar nunca a la salida, ya que la pared que sigue no lleva a ningún lado.
+    El problema principal de `maze_2` es que hay paredes internas que no están conectadas con las paredes exteriores del laberinto (las que tienen la salida). Esto hace que el algoritmo de seguimiento se quede dando vueltas indefinidamente alrededor de una "isla" interior sin llegar nunca a la salida, ya que la pared que sigue no lleva a ningún lado.
   ]
 
   #pregunta("15", [¿Es el robot capaz de resolver este laberinto? Si no es así, justifica tu respuesta. ¿Qué información crees que necesita el robot para poder llegar a resolverlo?])[
-    Con un simple wall-following, no. Si el robot empieza siguiendo una pared que forma parte de una isla desconectada, se queda en bucle sin alcanzar la salida. Para resolverlo necesitaría información adicional, como un mapa del laberinto (por ejemplo mediante SLAM) o algún mecanismo de memoria que le permita detectar que está repitiendo el mismo recorrido y cambiar de estrategia, por ejemplo cambiando de pared o marcando zonas ya visitadas.
+    Con un simple wall-following, no. Si el robot empieza siguiendo una pared que forma parte de una isla desconectada, se queda en bucle sin alcanzar la salida. En el siguiente #link("https://youtu.be/0M17mQbGifk?t=0")[video (0:00)] se puede observar exactamente este comportamiento con el Waffle.
+
+    Para resolverlo necesitaría información adicional, como un mapa del laberinto (por ejemplo mediante SLAM) o algún mecanismo de memoria que le permita detectar que está repitiendo el mismo recorrido y cambiar de estrategia.
   ]
+
+  Para mejorar el comportamiento ante ese bucle, se ha combinado el seguimiento de pared derecha con el algoritmo de *Pledge*: se integra la rotación neta del robot (mediante odometría) y, cuando el contador de giros vuelve a cero en un punto donde puede avanzar hacia el exterior de la "isla", se abandona el *wall following* y se busca de nuevo una pared a seguir. La lógica actual está en `ros2_ws/src/maze_pkg/maze_pkg/res_maze.py` (nodo `maze_solver`).
+
+  #campo("Acumulación de rotación (`/odom`)")[
+    El callback de odometría obtiene el _yaw_ a partir del cuaternión, calcula el incremento angular entre lecturas corrigiendo el salto $plus.minus 180°$, y acumula el giro en `rotacion_acumulada`, que es la magnitud que usa Pledge para saber si el robot ha completado un ciclo de vueltas respecto a la orientación de referencia:
+
+    ```python
+    if self.angulo_previo is None:
+        self.angulo_previo = grados
+        return
+
+    delta = grados - self.angulo_previo
+    if delta > 180.0:
+        delta -= 360.0
+    elif delta < -180.0:
+        delta += 360.0
+
+    self.rotacion_acumulada += delta
+    self.angulo_previo = grados
+    ```
+  ]
+
+  #campo("Máquina de estados Pledge + pared derecha")[
+    `estado_pledge == 0` avanza en línea recta hasta detectar pared a la derecha; entonces pasa a `estado_pledge == 1` y aplica la misma lógica de cuatro casos que el seguimiento de pared (avanzar, girar izquierda, girar derecha, o combinar giro y avance). La novedad es la condición de escape: en estado 1, si la rotación acumulada está cerca de cero y no hay obstáculo frontal, se vuelve al estado 0 y se intenta "salir" recto, rompiendo el circuito alrededor de la isla:
+
+    ```python
+    if self.estado_pledge == 0:
+        if self.pared_derecha:
+            self.estado_pledge = 1
+            self.rotacion_acumulada = 0.0
+        else:
+            cmd.linear.x = VEL_LINEAL
+            cmd.angular.z = 0.0
+    elif self.estado_pledge == 1:
+        if abs(self.rotacion_acumulada) < TOLERANCIA_GRADOS and not self.pared_frente:
+            self.estado_pledge = 0
+            self.rotacion_acumulada = 0.0
+            cmd.linear.x = VEL_LINEAL
+            cmd.angular.z = 0.0
+        else:
+            if self.pared_derecha and not self.pared_frente:
+                cmd.linear.x = VEL_LINEAL
+                cmd.angular.z = 0.0
+            elif self.pared_derecha and self.pared_frente:
+                cmd.linear.x = 0.0
+                cmd.angular.z = VEL_ANGULAR
+            elif self.pared_frente and not self.pared_derecha:
+                cmd.linear.x = 0.0
+                cmd.angular.z = -VEL_ANGULAR
+            else:
+                cmd.linear.x = VEL_LINEAL / 4.0
+                cmd.angular.z = -VEL_ANGULAR
+    ```
+  ]
+
+  Con Pledge, el Turtlebot 3 Waffle consigue completar el laberinto `maze_2`, como se puede comprobar en el mismo #link("https://youtu.be/0M17mQbGifk?t=95")[video (1:35)].
 ]
 
 #pagebreak()
@@ -690,20 +748,49 @@ Para comenzar, se lanza en un mundo vacío por un lado el Turtlebot 2 y por otro
   ```
 
   #pregunta("16", [¿Qué diferencias observas respecto al otro modelo? Detalla claramente las diferencias que observes.])[
+    Al ejecutar el Burger en el primer laberinto (#link("https://www.youtube.com/watch?v=yInB-Bq9tng")[video maze\_1]) y en el segundo con Pledge (#link("https://youtu.be/0M17mQbGifk?t=227")[video maze\_2, 3:47]), se observan las siguientes diferencias respecto al Waffle:
 
+    - *Tamaño y maniobrabilidad:* Burger es significativamente más pequeño ($0.140 times 0.140$ m frente a $0.266 times 0.266$ m), lo que le permite pasar por pasillos estrechos con más holgura. Sin embargo, su menor separación de ruedas ($0.160$ m vs $0.288$ m) hace que sus giros sean menos estables y más propensos a desviaciones.
+
+    - *Velocidad de respuesta:* Al tener menos masa ($0.826$ kg vs $1.373$ kg), Burger reacciona más rápidamente a los comandos de velocidad, pero también es más sensible a las correcciones, lo que puede provocar un comportamiento ligeramente más nervioso al seguir las paredes.
+
+    - *Drift en los giros:* Como ya se observó en la Parte 1, Burger acumula más error angular por iteración. En el contexto del laberinto esto se traduce en que ocasionalmente se acerca demasiado a las paredes o tarda un poco más en estabilizar su trayectoria tras un giro.
+
+    - *Velocidad de resolución:* A pesar de su menor estabilidad, Burger termina los laberintos en menos tiempo. Su menor masa e inercia hacen que alcance la velocidad de consigna más rápido tras cada giro, y su tamaño compacto le permite tomar las curvas sin necesitar tanto margen de maniobra, reduciendo el tiempo total de recorrido.
+
+    - *Resolución con Pledge:* Ambos modelos consiguen resolver `maze_2` con el algoritmo de Pledge, pero Burger necesita más correcciones durante el seguimiento de pared debido a su menor estabilidad. El algoritmo funciona correctamente con los mismos parámetros para ambos robots.
   ]
 ]
 
 #pagebreak()
 
 #ejercicio("4", [Generación de un laberinto personalizado y resolución con ambos modelos])[
-  Se genera un nuevo laberinto personalizado y se prueban ambos modelos del Turtlebot 3 para resolverlo. Para la creación del mapa se investiga cómo generar modelos y mundos en Gazebo. Como guía para el diseño del laberinto se puede utilizar el siguiente generador:
+  Se genera un nuevo laberinto personalizado (`maze_3.world`) y se prueban ambos modelos del Turtlebot 3 para resolverlo.
 
-  #link("https://www.mazegenerator.net")[Maze Generator]
+  #campo("Generación del laberinto")[
+    Para crear el laberinto se ha desarrollado un script en Python (`custom_maze_world_gen.py`) que genera directamente un fichero `.world` compatible con Gazebo. El script utiliza un algoritmo de *Depth-First Search* para generar un laberinto perfecto (sin ciclos) sobre una rejilla de $15 times 15$ celdas, con celdas de $1.2$ m de lado. Después, elimina aleatoriamente un $15%$ de las paredes internas (`ISLAND_FACTOR`) para crear islas y pasillos de anchura variable, haciendo que el laberinto requiera el algoritmo de Pledge para ser resuelto. Todas las paredes se agrupan en un único `<link>` SDF para optimizar el rendimiento de Gazebo.
+
+    ```python
+    WIDTH = 15          # Celdas en X
+    HEIGHT = 15         # Celdas en Y
+    CELL_SIZE = 1.2     # Tamaño de celda (m)
+    WALL_THICKNESS = 0.15
+    WALL_HEIGHT = 1.0
+    ISLAND_FACTOR = 0.15  # Probabilidad de eliminar una pared para crear islas
+    ```
+
+    El robot se posiciona en el centro del laberinto y la salida se abre en la pared superior central. Para generar el mundo basta con ejecutar:
+    ```bash
+    python3 custom_maze_world_gen.py
+    ```
+    Esto produce el fichero `maze_3.world` listo para ser lanzado en Gazebo.
+  ]
 
   #campo("Diseño del laberinto")[
     #image("/assets/image-18.png")
   ]
 
-  #link("https://www.mazegenerator.net")[Resultado con Burger]
+  #campo("Resultado")[
+    El modelo Burger resuelve el laberinto generado utilizando el algoritmo de Pledge, como se puede ver en el siguiente #link("https://youtu.be/Ysx-LqwLCmk")[video]. El Waffle también lo completa sin problemas gracias a su mayor estabilidad, aunque el laberinto está dimensionado para que ambos modelos puedan recorrerlo cómodamente dado el tamaño de celda de $1.2$ m.
+  ]
 ]
