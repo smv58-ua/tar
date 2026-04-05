@@ -559,59 +559,163 @@ ros2 run turtlebot3_teleop teleop_keyboard
 
 = Parte 2: Resolución de un Laberinto
 
-En esta segunda parte de la práctica, se utilizará el Turtlebot 3 equipado con un sensor LiDAR para resolver un laberinto de manera autónoma.
+En esta segunda parte de la práctica se utiliza el Turtlebot 3 equipado con un sensor LiDAR para resolver un laberinto de manera autónoma. Para ello se crea un nuevo paquete de ROS llamado `maze_pkg`, incluyendo todas las dependencias necesarias. Este paquete contendrá los nodos y scripts requeridos para la navegación del robot dentro del laberinto, empleando técnicas de percepción y control basadas en los datos del LiDAR.
 
-== Preguntas teóricas
+Para comenzar, se lanza en un mundo vacío por un lado el Turtlebot 2 y por otro el Turtlebot 3, y se contesta a las siguientes preguntas para cada robot:
 
 #pregunta("12", [¿Cuál es el topic asociado al LiDAR? ¿Cuál es la tipología de los mensajes?])[
-  TODO
+
+  El topic asiciado al LIDAR es `/scan` y el tipo de mensaje publicado es `sensor_msgs/msg/LaserScan`. Se puede verificar con:
+  ```bash
+  ros2 topic info /scan
+  ```
+  Lo cual nos devuelve:
+  ```
+  Type: sensor_msgs/msg/LaserScan
+  Publisher count: 1
+  Subscription count: 0
+  ```
+  Si mostramos información sobre el tipo de mensaje con el siguiente comando:
+  ```bash
+  ros2 interface show sensor_msgs/msg/LaserScan
+  ```
+  Obtenermos todos los campos que componen el mensaje:
+  ```bash
+    # Single scan from a planar laser range-finder
+    #
+    # If you have another ranging device with different behavior (e.g. a sonar
+    # array), please find or create a different message, since applications
+    # will make fairly laser-specific assumptions about this data
+
+    std_msgs/Header header
+        builtin_interfaces/Time stamp
+            int32 sec
+            uint32 nanosec
+        string frame_id
+    float32 angle_min
+    float32 angle_max
+    float32 angle_increment
+    float32 time_increment
+    float32 scan_time
+    float32 range_min
+    float32 range_max
+    float32[] ranges
+    float32[] intensities
+  ```
+
 ]
 
 #pregunta("13", [¿Cuál es el rango de distancias que puede medir el LiDAR? ¿Cuál es el rango angular de escaneo que tiene el LiDAR? ¿Cuál es el origen de referencia del LiDAR?])[
-  TODO
+  Para poder comprobar los rangos de distancia y ángulo del LiDAR, así como su origen de referencia, se puede "escuchar" uno de los mensajes publicados en el topic `/scan` con el siguiente comando:
+  ```bash
+  ros2 topic echo /scan --once
+  ```
+  Entre la información publicada en el mensaje, se pueden encontrar los siguientes campos relevantes:
+  - range_min: 0.11999999731779099
+  - range_max: 3.5
+  - angle_min: 0.0
+  - angle_max: 6.28000020980835
+  - frame_id: "base_scan"
+
+  Con esta información se puede concluir que el LIDAR puede medir distancias desde aproximadamente 0.12 metros hasta 3.5 metros, con un rango angular completo de 360° (de 0 a $2\pi$ radianes). El origen de referencia del LiDAR es el frame `base_scan`, lo que nos indica que el centro de coordenada de la infromació devuelta por el LIDAR es la propia posición del sensor.
+
 ]
 
 == Ejercicios
 
-#ejercicio("1", [Desarrollar un nodo `res_maze.py` que haga que el robot logre escapar del laberinto])[
-  El objetivo es emplear el Turtlebot 3 y desarrollar un nodo que haga que el robot logre "escapar" del laberinto, el nodo debe llamarse `res_maze.py` dentro del paquete `maze_pkg`. Para poder cargar el entorno de simulación con el mapa con el laberinto, se deben añadir los directorios `models`, `worlds` y `launch`, que se encuentran en la carpeta `Parte_2`, en el directorio raíz del paquete. A continuación, para poder lanzar el robot se debe ejecutar el siguiente comando una vez compilado el paquete:
+#ejercicio("1", [Nodo `res_maze.py` para resolver el laberinto con el Turtlebot 3])[
+
+  Se ha implementado el nodo para resolver el primer laberinto (`maze_1.world`) utlizando la información del LIDAR para detectar las paredes del laberinto. Para ellos hemos usado el algortimo de seguimiento de pared derecha, que consiste en mantener la pared a la derecha del robot mientras se avanza. El robot gira a la derecha si no hay pared a su derecha, avanza recto mientras haya pared a su derecha, y gira derecha o izquierda si detecta un obstáculo frontal.
+
+  Para resolverlo se han definido los cuatro estados siguientes:
+
+  + *Avanzar recto:* El robot avanza manteniendo la pared a su derecha, corrigiendo su trayectoria si se aleja demasiado de ella.
+  + *Girar a la izquierda:* El robot gira a la izquierda para evitar un obstáculo frontal, hasta que la vía quede despejada.
+  + *Girar a la derecha para evitar un obstáculo:* El robot gira a la derecha en caso de enconctrar un obstáculo frontal.
+  + *Girar a la derecha y avanzar:* El robot gira a la derecha mientras avanza, hasta tener una pared a su derecha.
+
+  Además, se ha definido un estado extra a los cuatro típicos, para conseguir que el robot comience, debido a que en la posición inicial no se encuentra ninguna pared por lo que no se cumplía ninguna de las condiciones anteriores. En este estado inicial, el robot avanza recto hasta encontrar una pared, momento en el que comienza a aplicar el algoritmo de seguimiento de pared derecha.
+
+  Para lograr obtener la infomación del LiDAR se ha creado un callback que se suscribe al topic correspondiente, y que procesa los datos de escaneo para determinar la presencia de paredes en las direcciones frontal y derecha. En función de esta información, el nodo decide qué acción tomar en cada momento. Para detectar un muro, se usa un angulo de "visión" y se calcula la distancia mínima a un obstáculo dentro de ese rango angular, durante las pruebas también se pobró a usar la media de las distancias dentro del rango, pero se observó que el mínimo era más efectivo para evitar colisiones.
+
+  También se han definido unos umbrales de distancia para considerar que hay una pared, quedando establecidos finalmente en:
+
+  ```python
+  UMBRAL_FRENTE = 1.2      # Distancia mínima para considerar que hay una pared al frente (m)
+  UMBRAL_DERECHA = 1.2  # Distancia mínima para considerar que hay una pared a la derecha (m)
+  ```
+
+  Como resultado, el robot es capaz de resolver el laberinto siguiendo la pared derecha, se puede comprobar en el siguiente #link("https://youtu.be/azQwjBAmv10")[video de la ejecución] del nodo o lanzando el entorno en Gazebo y ejecutando el nodo:
+
+  - Primera terminal: Lanzar el entorno de Gazebo con el laberinto
   ```bash
   ros2 launch maze_pkg maze_1.launch.py
   ```
 
-  TODO
+  - Segunda terminal: Ejecutar el nodo de resolución del laberinto
+  ```bash
+  ros2 run maze_pkg maze_solver_node
+  ```
 ]
 
-#ejercicio("2", [Probar el algoritmo de resolución en `maze_2.world`])[
-  En la carpeta `worlds` existe otro mapa con otro modelo de laberinto llamado `maze_2.world`. Se ejecuta este nuevo entorno en `Gazebo` y se lanza de nuevo el algoritmo de resolución del Ejercicio 1.
+#pagebreak()
 
-  Para lanzar este otro `world` se usa el launch dedicado:
-  ```bash
+#ejercicio("2", [Ejecutar el algoritmo en el segundo laberinto (`maze_2.world`) y analizar su comportamiento])[
+  En la carpeta `worlds` existe un segundo mapa con un modelo de laberinto distinto llamado `maze_2.world`. Se lanza este nuevo entorno en Gazebo y se ejecuta el algoritmo de resolución del Ejercicio 1:
+```bash
   ros2 launch maze_pkg maze_2.launch.py
-  ```
+```
+
+  #campo("Resultado")[
+    #captura
+  ]
 
   #pregunta("14", [¿Qué problemática observas en este tipo de escenarios?])[
-    TODO
+
   ]
 
   #pregunta("15", [¿Es el robot capaz de resolver este laberinto? Si no es así, justifica tu respuesta. ¿Qué información crees que necesita el robot para poder llegar a resolverlo?])[
-    TODO
+
   ]
 ]
 
-#ejercicio("3", [Repetir los ejercicios anteriores empleando el Turtlebot 3 Burger])[
-  Se repiten los Ejercicios 1 y 2 empleando el modelo `Burger` en lugar del `Waffle`:
-  ```bash
+#pagebreak()
+
+#ejercicio("3", [Repetir los Ejercicios 1 y 2 con el Turtlebot 3 Burger])[
+  Se repiten los ejercicios anteriores empleando el modelo `Burger`:
+```bash
   export TURTLEBOT3_MODEL=burger
-  ```
+```
+
+  #campo("Laberinto 1")[
+    #captura
+  ]
+
+  #campo("Laberinto 2")[
+    #captura
+  ]
 
   #pregunta("16", [¿Qué diferencias observas respecto al otro modelo? Detalla claramente las diferencias que observes.])[
-    TODO
+
   ]
 ]
 
-#ejercicio("4", [Generar un nuevo laberinto personalizado y probarlo con ambos Turtlebot3])[
-  En este ejercicio se pide generar un nuevo laberinto a tu gusto y probar con los dos Turtlebot3 a resolverlo. Para ello, se debe investigar sobre cómo generar modelos y mapas en `Gazebo` para luego cargarlos. Como guía para el laberinto se puede usar el siguiente generador: #link("https://mazegenerator.net/")[Maze Generator]. Cuanto más complejo sea el laberinto mejor valoración se tendrá y, sobre todo, si los robots logran resolverlo.
+#pagebreak()
 
-  TODO
+#ejercicio("4", [Generación de un laberinto personalizado y resolución con ambos modelos])[
+  Se genera un nuevo laberinto personalizado y se prueban ambos modelos del Turtlebot 3 para resolverlo. Para la creación del mapa se investiga cómo generar modelos y mundos en Gazebo. Como guía para el diseño del laberinto se puede utilizar el siguiente generador:
+
+  #link("https://www.mazegenerator.net")[Maze Generator]
+
+  #campo("Diseño del laberinto")[
+
+  ]
+
+  #campo("Resultado con Waffle")[
+    #captura
+  ]
+
+  #campo("Resultado con Burger")[
+    #captura
+  ]
 ]
