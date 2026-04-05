@@ -147,7 +147,7 @@
 #v(15pt)
 #text(size: 11pt, fill: soft)[Abel Gandía Ruiz]
 #v(8pt, weak: true)
-#link("https://github.com/danisty/tar")[https://github.com/danisty/tar]
+#link("https://github.com/smv58-ua/tar")[https://github.com/smv58-ua/tar]
 #v(16pt, weak: true)
 #outline()
 
