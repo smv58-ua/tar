@@ -563,6 +563,8 @@ En esta segunda parte de la práctica se utiliza el Turtlebot 3 equipado con un 
 
 Para comenzar, se lanza en un mundo vacío por un lado el Turtlebot 2 y por otro el Turtlebot 3, y se contesta a las siguientes preguntas para cada robot:
 
+== Preguntas teóricas
+
 #pregunta("12", [¿Cuál es el topic asociado al LiDAR? ¿Cuál es la tipología de los mensajes?])[
 
   El topic asiciado al LIDAR es `/scan` y el tipo de mensaje publicado es `sensor_msgs/msg/LaserScan`. Se puede verificar con:
@@ -662,20 +664,20 @@ Para comenzar, se lanza en un mundo vacío por un lado el Turtlebot 2 y por otro
 
 #ejercicio("2", [Ejecutar el algoritmo en el segundo laberinto (`maze_2.world`) y analizar su comportamiento])[
   En la carpeta `worlds` existe un segundo mapa con un modelo de laberinto distinto llamado `maze_2.world`. Se lanza este nuevo entorno en Gazebo y se ejecuta el algoritmo de resolución del Ejercicio 1:
-```bash
+  ```bash
   ros2 launch maze_pkg maze_2.launch.py
-```
+  ```
 
   #campo("Resultado")[
-    #captura
+    #image("/assets/image-17.png")
   ]
 
   #pregunta("14", [¿Qué problemática observas en este tipo de escenarios?])[
-
+    El problema principal de `maze_2` es que hay paredes internas que no están conectadas con las paredes exteriores del laberinto (las que tienen la salida). Esto hace que un algoritmo de seguimiento de pared (como wall-following o Pledge) pueda quedarse dando vueltas indefinidamente alrededor de una "isla" interior sin llegar nunca a la salida, ya que la pared que sigue no lleva a ningún lado.
   ]
 
   #pregunta("15", [¿Es el robot capaz de resolver este laberinto? Si no es así, justifica tu respuesta. ¿Qué información crees que necesita el robot para poder llegar a resolverlo?])[
-
+    Con un simple wall-following, no. Si el robot empieza siguiendo una pared que forma parte de una isla desconectada, se queda en bucle sin alcanzar la salida. Para resolverlo necesitaría información adicional, como un mapa del laberinto (por ejemplo mediante SLAM) o algún mecanismo de memoria que le permita detectar que está repitiendo el mismo recorrido y cambiar de estrategia, por ejemplo cambiando de pared o marcando zonas ya visitadas.
   ]
 ]
 
@@ -683,17 +685,9 @@ Para comenzar, se lanza en un mundo vacío por un lado el Turtlebot 2 y por otro
 
 #ejercicio("3", [Repetir los Ejercicios 1 y 2 con el Turtlebot 3 Burger])[
   Se repiten los ejercicios anteriores empleando el modelo `Burger`:
-```bash
+  ```bash
   export TURTLEBOT3_MODEL=burger
-```
-
-  #campo("Laberinto 1")[
-    #captura
-  ]
-
-  #campo("Laberinto 2")[
-    #captura
-  ]
+  ```
 
   #pregunta("16", [¿Qué diferencias observas respecto al otro modelo? Detalla claramente las diferencias que observes.])[
 
@@ -708,14 +702,8 @@ Para comenzar, se lanza en un mundo vacío por un lado el Turtlebot 2 y por otro
   #link("https://www.mazegenerator.net")[Maze Generator]
 
   #campo("Diseño del laberinto")[
-
+    #image("/assets/image-18.png")
   ]
 
-  #campo("Resultado con Waffle")[
-    #captura
-  ]
-
-  #campo("Resultado con Burger")[
-    #captura
-  ]
+  #link("https://www.mazegenerator.net")[Resultado con Burger]
 ]
